@@ -3,6 +3,7 @@ import datetime
 from flask import Blueprint, request, jsonify, current_app
 from .models import User
 from .database import db
+from functools import wraps
 
 # O nome aqui DEVE ser auth_bp para coincidir com o __init__.py
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -46,3 +47,26 @@ def login():
         }), 200
         
     return jsonify({"error": "Credenciais invalidas"}), 401
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        if token and 'Bearer ' in token:
+            token = token.split(" ")[1]
+        
+        if not token:
+            return jsonify({'message': 'Token faltando!'}), 401
+        try:
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+            current_user = User.query.get(data['user_id'])
+        except:
+            return jsonify({'message': 'Token invalido!'}), 401
+            
+        return f(current_user, *args, **kwargs)
+    return decorated
+
+@auth_bp.route('/me', methods=['GET'])
+@token_required
+def get_user_data(current_user):
+    return jsonify(current_user.to_dict()), 200
