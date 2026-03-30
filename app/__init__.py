@@ -2,13 +2,17 @@ import os
 from dotenv import load_dotenv
 from flask import Flask
 from .database import db
-
+from flask_cors import CORS
 
 load_dotenv()
 def create_app():
     app = Flask(__name__)
     
     # Configurações
+    # 2. Configure o CORS para permitir requisições do seu Frontend
+    # Em desenvolvimento, você pode usar resources={r"/api/*": {"origins": "*"}}
+    # Mas o ideal é especificar a porta padrão do Vite (5173)
+    CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     # Chave para assinar os tokens JWT
